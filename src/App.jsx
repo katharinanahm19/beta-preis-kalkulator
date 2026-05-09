@@ -87,10 +87,11 @@ const css = `
 
   .pk * { box-sizing: border-box; margin: 0; padding: 0; }
   .pk { font-family: 'Montserrat', sans-serif; background: #fef4ee; min-height: 100vh; padding: 2.5rem 1.25rem 4rem; }
+  .pk-inner { max-width: 560px; margin: 0 auto; }
 
   .pk-header { text-align: center; margin-bottom: 2rem; }
   .pk-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: #bd8892; margin-bottom: .5rem; }
-  .pk-title { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 700; color: #1a4535; line-height: 1.15; }
+  .pk-title { font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 700; color: #1a4535; line-height: 1.15; }
   .pk-divider { width: 36px; height: 2px; background: #bd8892; margin: .9rem auto; border-radius: 1px; }
   .pk-sub { font-size: 13px; color: #5a4540; line-height: 1.65; max-width: 400px; margin: 0 auto; }
 
@@ -225,7 +226,8 @@ export default function BetaPreisKalkulator() {
       const hasExtras   = extras.trim().length > 0;
       const extrasLower = extras.toLowerCase();
       const has1to1     = extrasLower.includes("1:1") || extrasLower.includes("einzelcoaching") || extrasLower.includes("einzelgespräch");
-      const boniFactor  = has1to1 ? 1.45 : hasExtras ? 1.15 : 1.0;
+      const multi1to1   = has1to1 && /([2-9]|[1-9]\d+)\s*(x|mal|×)?\s*1:1|1:1.{0,10}([2-9]|[1-9]\d+)\s*(x|mal|session|call)/i.test(extras);
+      const boniFactor  = has1to1 ? (multi1to1 ? 1.65 : 1.45) : hasExtras ? 1.15 : 1.0;
       const wochenVal   = w * 15;
       const sessionsVal = s * 35;
       const transFactor = TRANS_FACTORS[transformation] ?? 1.0;
@@ -264,6 +266,7 @@ export default function BetaPreisKalkulator() {
     <>
       <style>{css}</style>
       <div className="pk">
+        <div className="pk-inner">
         <div className="pk-header">
           <p className="pk-eyebrow">Launch Sisters · Beta-Programm</p>
           <h1 className="pk-title">Preis-Kalkulator</h1>
@@ -400,6 +403,7 @@ export default function BetaPreisKalkulator() {
             </p>
           </div>
         )}
+        </div>
       </div>
     </>
   );
