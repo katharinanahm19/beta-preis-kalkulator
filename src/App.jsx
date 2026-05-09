@@ -12,7 +12,7 @@ const G = {
   textLight: "#7a6560",
 };
 
-const PRICE_POINTS = [97, 99, 149, 197, 247, 297, 347, 397, 447, 497];
+const PRICE_POINTS = [97, 147, 197, 247, 297, 347, 397, 447, 497];
 
 const TRANS_FACTORS = { klein: 0.75, mittel: 1.0, gross: 1.35 };
 const TRANS_LABELS  = {
@@ -232,12 +232,15 @@ export default function BetaPreisKalkulator() {
       const sessionsVal = s * 35;
       const transFactor = TRANS_FACTORS[transformation] ?? 1.0;
       const b2bFactor   = isB2B ? 1.5 : 1.0;
-      const rawBeta     = (74 + wochenVal + sessionsVal) * transFactor * b2bFactor * rFactor * boniFactor;
+      const sessionsFactor = isB2B ? 1.45 : 1.25;
+      const laengeFactor = w <= 4 ? 1.0 : w <= 7 ? 1.2 : w <= 12 ? 1.4 : 1.6;
+      const rawBeta     = (74 + wochenVal + sessionsVal) * transFactor * b2bFactor * rFactor * sessionsFactor;
       const capsB2C = { wenig: 97, mittel: 197, viel: 297 };
       const capsB2B = { wenig: 297, mittel: 397, viel: 497 };
       const caps    = isB2B ? capsB2B : capsB2C;
-      const betaPreis = Math.min(roundNice(rawBeta), caps[reichweite]);
-      const vollpreis = betaPreis * 2;
+      const baseCapped  = Math.min(roundNice(rawBeta), caps[reichweite]);
+      const betaPreis   = Math.min(roundNice(baseCapped * laengeFactor * boniFactor), 497);
+      const vollpreis   = betaPreis * 2;
 
       const reichweiteLabel = reichweiteLabels[reichweite];
       const transLabel      = TRANS_LABELS[transformation];
