@@ -12,7 +12,7 @@ const G = {
   textLight: "#7a6560",
 };
 
-const PRICE_POINTS = [99, 149, 197, 247, 297, 347, 397, 447, 497];
+const PRICE_POINTS = [97, 99, 149, 197, 247, 297, 347, 397, 447, 497];
 
 const TRANS_FACTORS = { klein: 0.75, mittel: 1.0, gross: 1.35 };
 const TRANS_LABELS  = {
@@ -216,13 +216,13 @@ export default function BetaPreisKalkulator() {
 
       const u = parseInt(umfrage) || 0;
       const reichweite = u < 10 ? "wenig" : u <= 30 ? "mittel" : "viel";
-      const reichweiteFactors = { wenig: 0.75, mittel: 1.0, viel: 1.4 };
+      const reichweiteFactors = { wenig: 0.55, mittel: 1.0, viel: 1.5 };
       const reichweiteLabels  = {
         wenig:  `${u} Umfrage-Teilnehmer (wenig Interesse)`,
         mittel: `${u} Umfrage-Teilnehmer (mittleres Interesse)`,
         viel:   `${u} Umfrage-Teilnehmer (hohes Interesse)`,
       };
-      const rFactor     = reichweiteFactors[reichweite] ?? 1.0;
+      const rFactor = reichweiteFactors[reichweite] ?? 1.0;
       const hasExtras   = extras.trim().length > 0;
       const extrasLower = extras.toLowerCase();
       const has1to1     = extrasLower.includes("1:1") || extrasLower.includes("einzelcoaching") || extrasLower.includes("einzelgespräch");
@@ -233,11 +233,11 @@ export default function BetaPreisKalkulator() {
       const transFactor = TRANS_FACTORS[transformation] ?? 1.0;
       const b2bFactor   = isB2B ? 1.5 : 1.0;
       const rawBeta     = (74 + wochenVal + sessionsVal) * transFactor * b2bFactor * rFactor * boniFactor;
-      const caps        = { wenig: 297, mittel: 397, viel: 497 };
-      const reichweiteCap = caps[reichweite];
-      const b2cCap      = isB2B ? Infinity : 297;
-      const betaPreis   = Math.min(roundNice(rawBeta), reichweiteCap, b2cCap);
-      const vollpreis   = betaPreis * 2;
+      const capsB2C = { wenig: 97, mittel: 197, viel: 297 };
+      const capsB2B = { wenig: 297, mittel: 397, viel: 497 };
+      const caps    = isB2B ? capsB2B : capsB2C;
+      const betaPreis = Math.min(roundNice(rawBeta), caps[reichweite]);
+      const vollpreis = betaPreis * 2;
 
       const reichweiteLabel = reichweiteLabels[reichweite];
       const transLabel      = TRANS_LABELS[transformation];
