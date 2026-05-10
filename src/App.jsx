@@ -216,37 +216,42 @@ export default function BetaPreisKalkulator() {
 
       const u = parseInt(umfrage) || 0;
       const reichweite = u < 10 ? "wenig" : u <= 30 ? "mittel" : "viel";
-      const reichweiteFactors = { wenig: 0.55, mittel: 1.0, viel: 1.5 };
-      const reichweiteLabels  = {
+      const reichweiteLabels = {
         wenig:  `${u} Umfrage-Teilnehmer (wenig Interesse)`,
         mittel: `${u} Umfrage-Teilnehmer (mittleres Interesse)`,
         viel:   `${u} Umfrage-Teilnehmer (hohes Interesse)`,
       };
-      const rFactor = reichweiteFactors[reichweite] ?? 1.0;
+
       const hasExtras   = extras.trim().length > 0;
       const extrasLower = extras.toLowerCase();
       const has1to1     = extrasLower.includes("1:1") || extrasLower.includes("einzelcoaching") || extrasLower.includes("einzelgespräch");
       const multi1to1   = has1to1 && /([2-9]|[1-9]\d+)\s*(x|mal|×)?\s*1:1|1:1.{0,10}([2-9]|[1-9]\d+)\s*(x|mal|session|call)/i.test(extras);
-      const boniFactor  = has1to1 ? (multi1to1 ? 1.65 : 1.45) : hasExtras ? 1.15 : 1.0;
-      const wochenVal   = w * 15;
-      const sessionsVal = s * 35;
-      const transFactor = TRANS_FACTORS[transformation] ?? 1.0;
-      const b2bFactor   = isB2B ? 1.5 : 1.0;
-      const sessionsFactor = isB2B ? 1.45 : 1.25;
-      const laengeFactor = w <= 4 ? 1.0 : w <= 7 ? 1.2 : w <= 12 ? 1.4 : 1.6;
-      const rawBeta     = (74 + wochenVal + sessionsVal) * transFactor * b2bFactor * rFactor * sessionsFactor;
+
+      const transFactor      = TRANS_FACTORS[transformation] ?? 1.0;
+      const reichweiteFactor = { wenig: 0.6, mittel: 1.0, viel: 1.3 }[reichweite];
+      const laengeFactor     = w <= 4 ? 0.8 : w <= 6 ? 1.0 : w <= 8 ? 1.15 : 1.3;
+      const b2bFactor        = isB2B ? 1.4 : 1.0;
+
+      // Alle Faktoren fließen in Rohpreis → dann harter Cap
+      const rawBeta = (60 + w * 6 + s * 10) * transFactor * reichweiteFactor * laengeFactor * b2bFactor;
       const capsB2C = { wenig: 97, mittel: 197, viel: 297 };
-      const capsB2B = { wenig: 297, mittel: 397, viel: 497 };
+      const capsB2B = { wenig: 247, mittel: 347, viel: 497 };
       const caps    = isB2B ? capsB2B : capsB2C;
-      const baseCapped  = Math.min(roundNice(rawBeta), caps[reichweite]);
-      const betaPreis   = Math.min(roundNice(baseCapped * laengeFactor * boniFactor), 497);
+      const baseCapped = Math.min(roundNice(rawBeta), caps[reichweite]);
+
+      // Nur 1:1 darf den Cap überschreiten
+      const boniFactor  = has1to1 ? (multi1to1 ? 1.5 : 1.3) : 1.0;
+      const maxWithBoni = isB2B ? 497 : 397;
+      const betaPreis   = has1to1
+        ? Math.min(roundNice(baseCapped * boniFactor), maxWithBoni)
+        : baseCapped;
       const vollpreis   = betaPreis * 2;
 
       const reichweiteLabel = reichweiteLabels[reichweite];
       const transLabel      = TRANS_LABELS[transformation];
       const zielgruppeLabel = isB2B ? "B2B (Selbstständige/Unternehmer)" : "B2C (Privatpersonen)";
 
-      const summaryText = `${w}-wöchiges Programm mit ${s} Live-Sessions für eine ${zielgruppeLabel}-Zielgruppe. Die Transformation wird als "${transLabel}" eingestuft. Du hast ${reichweiteLabel} – das beeinflusst, wie viel Nachfrage realistisch ist und was der Markt bereit ist zu zahlen.${hasExtras ? " Zusätzliche Boni erhöhen den wahrgenommenen Wert." : ""} Als Beta-Preis empfehle ich 50\u00A0% deines späteren Vollpreises.`;
+      const summaryText = `${w}-wöchiges Programm mit ${s} Live-Sessions für eine ${zielgruppeLabel}-Zielgruppe. Die Transformation wird als "${transLabel}" eingestuft. Du hast ${reichweiteLabel} – das beeinflusst, wie viel Nachfrage realistisch ist und was der Markt bereit ist zu zahlen.${has1to1 ? " Die 1:1-Begleitung erhöht den Wert deutlich." : hasExtras ? " Zusätzliche Boni erhöhen den wahrgenommenen Wert." : ""} Als Beta-Preis empfehle ich 50\u00A0% deines späteren Vollpreises.`;
 
       setResult({
         betaPreis, vollpreis,
