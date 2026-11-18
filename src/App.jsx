@@ -42,44 +42,18 @@ function fmt(v) {
   return v.toLocaleString("de-DE") + "\u00A0€";
 }
 
+// KI-Analyse läuft serverseitig (netlify/functions/analyse.mjs), der API-Key bleibt in Netlify.
 async function analyseOutcome(outcome, boni) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/.netlify/functions/analyse", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 300,
-      messages: [{
-        role: "user",
-        content: `Du bist Preis-Expertin für Online-Programme im deutschsprachigen Markt.
-
-Analysiere diesen Programm-Outcome und beantworte zwei Fragen:
-
-1. B2B oder B2C?
-B2B = richtet sich an Selbstständige, Unternehmer, Freelancer, die damit Geld verdienen oder ihr Business voranbringen.
-B2C = richtet sich an Privatpersonen für persönliche Ziele, Gesundheit, Lifestyle, Beziehungen, Mindset.
-
-2. Transformationsgröße:
-"klein" = Quick Win, konkretes abgegrenztes Ergebnis, schnell erreichbar
-"mittel" = Merkliche Veränderung im Alltag, neuer Skill oder neue Gewohnheit
-"gross" = Tiefe Transformation, Lebensveränderung, Identitätswechsel
-
-Outcome: ${outcome}
-${boni ? `Weitere Leistungen: ${boni}` : ""}
-
-Antworte NUR mit diesem JSON, ohne Markdown, ohne Erklärung davor oder danach:
-{"isB2B":true,"transformation":"mittel","zielgruppe_begruendung":"Ein Satz.","transformation_begruendung":"Ein Satz."}`
-      }],
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outcome, boni }),
   });
-  const data = await res.json();
-  const raw = data.content?.[0]?.text || "{}";
-  return JSON.parse(raw.replace(/```json|```/g, "").trim());
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || typeof data.isB2B !== "boolean" || !TRANS_LABELS[data.transformation]) {
+    throw new Error(data.error || "Analyse fehlgeschlagen");
+  }
+  return data;
 }
 
 const css = `
